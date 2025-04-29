@@ -1,0 +1,43 @@
+
+
+services:
+  my-sql-1:
+    image: mysql:8.0
+    container_name: my-sql
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: mysqlserver
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - user_default
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p12345678"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mia-api-rest-1:
+    image: mia-api-rest:latest
+    container_name: mia-api-rest-1
+    depends_on:
+      my-sql-1:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://my-sql-1:3306/mysqlserver
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 12345678
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+    networks:
+      - user_default
+
+volumes:
+  mysql-data:
+
+networks:
+  user_default:
+    driver: bridge
